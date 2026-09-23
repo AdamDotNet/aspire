@@ -42,7 +42,7 @@ public class MicrosoftAzureCosmosPublicApiTests
     {
         IHostApplicationBuilder builder = null!;
 
-        var action = () => builder.AddAzureCosmosClient("cosmos", null, (Action<CosmosClientOptions>?)null);
+        var action = () => builder.AddAzureCosmosClient("cosmos", null, null);
 
         var exception = Assert.Throws<ArgumentNullException>(action);
         Assert.Equal(nameof(builder), exception.ParamName);
