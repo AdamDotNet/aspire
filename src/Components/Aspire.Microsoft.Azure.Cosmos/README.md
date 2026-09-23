@@ -102,7 +102,13 @@ You can also pass the `Action<MicrosoftAzureCosmosSettings> configureSettings` d
 builder.AddAzureCosmosClient("cosmosConnectionName", settings => settings.DisableTracing = true);
 ```
 
-You can also set up the [CosmosClientOptions](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclientoptions) using the optional `Action<IServiceProvider, CosmosClientOptions> configureClientOptions` parameter of the `AddAzureCosmosClient` method. The service provider can be used to resolve services needed to configure the client. For example:
+You can also set up the [CosmosClientOptions](https://learn.microsoft.com/dotnet/api/microsoft.azure.cosmos.cosmosclientoptions) using the `configureClientOptions` parameter of the `AddAzureCosmosClient` method. The existing single-argument callback runs during registration:
+
+```csharp
+builder.AddAzureCosmosClient("cosmosConnectionName", configureClientOptions: clientOptions => clientOptions.ApplicationName = "myapp");
+```
+
+The new two-argument callback runs when the client is created and can resolve dependencies from the service provider:
 
 ```csharp
 builder.AddAzureCosmosClient("cosmosConnectionName", configureClientOptions: (serviceProvider, clientOptions) =>

@@ -250,6 +250,71 @@ public class AspireMicrosoftAzureCosmosExtensionsTests
     [InlineData("keyed-container")]
     [InlineData("database")]
     [InlineData("keyed-database")]
+    public void ExistingClientOptionsCallbackRunsAtRegistration(string registrationType)
+    {
+        var builder = Host.CreateEmptyApplicationBuilder(null);
+        const string connectionName = "cosmos";
+        const string applicationName = "ConfiguredAtRegistration";
+        var connectionString = "AccountEndpoint=https://localhost:8081/;AccountKey=fake;Database=testdb;Container=testcontainer;";
+        var callbackCount = 0;
+
+        PopulateConfiguration(builder.Configuration, connectionString);
+
+        Action<CosmosClientOptions> configureClientOptions = options =>
+        {
+            options.ApplicationName = applicationName;
+            callbackCount++;
+        };
+
+        switch (registrationType)
+        {
+            case "client":
+                builder.AddAzureCosmosClient(connectionName, configureClientOptions: configureClientOptions);
+                break;
+            case "keyed-client":
+                builder.AddKeyedAzureCosmosClient(connectionName, configureClientOptions: configureClientOptions);
+                break;
+            case "container":
+                builder.AddAzureCosmosContainer(connectionName, configureClientOptions: configureClientOptions);
+                break;
+            case "keyed-container":
+                builder.AddKeyedAzureCosmosContainer(connectionName, configureClientOptions: configureClientOptions);
+                break;
+            case "database":
+                builder.AddAzureCosmosDatabase(connectionName, configureClientOptions: configureClientOptions);
+                break;
+            case "keyed-database":
+                builder.AddKeyedAzureCosmosDatabase(connectionName, configureClientOptions: configureClientOptions);
+                break;
+            default:
+                throw new InvalidOperationException();
+        }
+
+        Assert.Equal(1, callbackCount);
+
+        using var host = builder.Build();
+        var client = registrationType switch
+        {
+            "client" => host.Services.GetRequiredService<CosmosClient>(),
+            "keyed-client" => host.Services.GetRequiredKeyedService<CosmosClient>(connectionName),
+            "container" => host.Services.GetRequiredService<Container>().Database.Client,
+            "keyed-container" => host.Services.GetRequiredKeyedService<Container>(connectionName).Database.Client,
+            "database" => host.Services.GetRequiredService<Database>().Client,
+            "keyed-database" => host.Services.GetRequiredKeyedService<Database>(connectionName).Client,
+            _ => throw new InvalidOperationException()
+        };
+
+        Assert.EndsWith($"/{applicationName}", client.ClientOptions.ApplicationName);
+        Assert.Equal(1, callbackCount);
+    }
+
+    [Theory]
+    [InlineData("client")]
+    [InlineData("keyed-client")]
+    [InlineData("container")]
+    [InlineData("keyed-container")]
+    [InlineData("database")]
+    [InlineData("keyed-database")]
     public void ConfigureClientOptionsCanResolveServices(string registrationType)
     {
         var builder = Host.CreateEmptyApplicationBuilder(null);
